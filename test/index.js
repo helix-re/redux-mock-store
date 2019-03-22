@@ -91,6 +91,21 @@ describe('redux-mock-store', () => {
     expect(store.getActions()).toEqual([])
   })
 
+  it('finds the actions', () => {
+    const actions = [
+      { type: 'ADD_ITEM' },
+      { type: 'REMOVE_ITEM' },
+      { type: 'ADD_ITEM' }
+    ]
+    const store = mockStore({})
+
+    store.dispatch(actions[0])
+    store.dispatch(actions[1])
+    store.dispatch(actions[2])
+
+    expect(store.findActions({ type: 'ADD_ITEM' }).length).toBe(2)
+  })
+
   it('handles multiple actions', () => {
     const store = mockStore()
     const actions = [

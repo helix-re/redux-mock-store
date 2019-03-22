@@ -1,21 +1,18 @@
 import { applyMiddleware } from 'redux'
+import isEqual from 'lodash.isequal'
 import isPlainObject from 'lodash.isplainobject'
 
 const isFunction = arg => typeof arg === 'function'
 
-export function configureStore (middlewares = []) {
-  return function mockStore (getState = {}) {
-    function mockStoreWithoutMiddleware () {
+export const configureStore = (middlewares = []) => {
+  const mockStore = (getState = {}) => {
+    const mockStoreWithoutMiddleware = () => {
       let actions = []
       let listeners = []
 
       const self = {
-        getState () {
-          return isFunction(getState) ? getState(actions) : getState
-        },
-
-        getActions () {
-          return actions
+        clearActions () {
+          actions = []
         },
 
         dispatch (action) {
@@ -36,16 +33,29 @@ export function configureStore (middlewares = []) {
           }
 
           actions.push(action)
-
-          for (let i = 0; i < listeners.length; i++) {
-            listeners[i]()
-          }
+          listeners.forEach(listener => listener())
 
           return action
         },
 
-        clearActions () {
-          actions = []
+        findActions (payload) {
+          let matches = []
+          actions.forEach(action => {
+            if (isEqual(action, payload)) {
+              matches.push(action)
+            }
+          })
+          return matches
+        },
+
+        getActions: () => actions,
+
+        getState: () => isFunction(getState) ? getState(actions) : getState,
+
+        replaceReducer (nextReducer) {
+          if (!isFunction(nextReducer)) {
+            throw new Error('Expected the nextReducer to be a function.')
+          }
         },
 
         subscribe (cb) {
@@ -55,17 +65,9 @@ export function configureStore (middlewares = []) {
 
           return () => {
             const index = listeners.indexOf(cb)
-
-            if (index < 0) {
-              return
+            if (index !== -1) {
+              listeners.splice(index, 1)
             }
-            listeners.splice(index, 1)
-          }
-        },
-
-        replaceReducer (nextReducer) {
-          if (!isFunction(nextReducer)) {
-            throw new Error('Expected the nextReducer to be a function.')
           }
         }
       }
@@ -79,6 +81,8 @@ export function configureStore (middlewares = []) {
 
     return mockStoreWithMiddleware()
   }
+
+  return mockStore
 }
 
 export default configureStore
